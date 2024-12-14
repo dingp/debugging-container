@@ -1,4 +1,4 @@
-name: Build fedora 26 image
+name: Build fedora 40 image
 
 on:
   #schedule:
