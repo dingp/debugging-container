@@ -4,7 +4,8 @@ MAINTAINER Pengfei Ding "pding@lbl.ggov"
 
 RUN yum clean all \
  && yum -y update \
- && yum -y install --allowerasing findutils wget which git vim nmap tcpdump procps-ng gdb curl iproute \
+ && yum -y install --allowerasing findutils wget which git \ 
+        vim nmap tcpdump procps-ng gdb curl iproute gcc openssl-devel zlib-devel \
  && yum clean all
 
 CMD ["/bin/bash"]
