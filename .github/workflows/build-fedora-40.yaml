@@ -1,4 +1,4 @@
-name: Build Ubuntu 20.04 image
+name: Build fedora 40 image
 
 on:
   #schedule:
@@ -9,7 +9,7 @@ on:
     tags:
       - 'v*'
     paths:
-      - container/ubuntu-20.04.Dockerfile
+      - container/fedora-40.Dockerfile
 
   workflow_dispatch:
 
@@ -37,17 +37,15 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ghcr.io/dingp/ubuntu
+            ghcr.io/dingp/fedora
           tags: |
-            type=raw,value=20.04-debug
-            type=ref,event=branch
-            type=ref,event=tag
+            type=raw,value=40-debug
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          file: ./container/ubuntu-20.04.Dockerfile 
+          file: ./container/fedora-40.Dockerfile 
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

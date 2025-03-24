@@ -1,4 +1,4 @@
-name: Build Almalinux 9 image
+name: Build Almalinux 8 image
 
 on:
   #schedule:
@@ -9,7 +9,7 @@ on:
     tags:
       - 'v*'
     paths:
-      - container/almalinux-9.Dockerfile
+      - container/almalinux-8.Dockerfile
 
   workflow_dispatch:
 
@@ -39,15 +39,13 @@ jobs:
           images: |
             ghcr.io/dingp/alma
           tags: |
-            type=raw,value=9-debug
-            type=ref,event=branch
-            type=ref,event=tag
+            type=raw,value=8-debug
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          file: ./container/almalinux-9.Dockerfile 
+          file: ./container/almalinux-8.Dockerfile 
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

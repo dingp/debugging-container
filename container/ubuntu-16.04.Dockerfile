@@ -13,8 +13,11 @@ RUN \
         tcpdump                \
         procps                 \
         gdb                    \
+        gcc                    \
+        make                   \
         curl                   \
-        iproute2           &&   \
+        zlib1g-dev             \
+        iproute2          &&   \
     apt-get clean all
 
 

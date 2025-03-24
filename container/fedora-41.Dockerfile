@@ -1,4 +1,4 @@
-FROM docker.io/fedora:40
+FROM docker.io/fedora:41
 
 MAINTAINER Pengfei Ding "pding@lbl.ggov"
 
