@@ -1,4 +1,4 @@
-name: Build fedora 40 image
+name: Build fedora 41 image
 
 on:
   #schedule:
@@ -9,7 +9,7 @@ on:
     tags:
       - 'v*'
     paths:
-      - container/fedora-40.Dockerfile
+      - container/fedora-41.Dockerfile
 
   workflow_dispatch:
 
@@ -39,13 +39,13 @@ jobs:
           images: |
             ghcr.io/dingp/fedora
           tags: |
-            type=raw,value=40-debug
+            type=raw,value=41-debug
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          file: ./container/fedora-40.Dockerfile 
+          file: ./container/fedora-41.Dockerfile 
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
