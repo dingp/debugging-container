@@ -16,6 +16,7 @@ RUN \
         gcc                    \
         make                   \
         curl                   \
+        fio                    \
         zlib1g-dev             \
         iproute2           &&   \
     apt-get clean all
