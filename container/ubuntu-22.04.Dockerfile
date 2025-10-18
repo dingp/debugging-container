@@ -35,4 +35,10 @@ RUN mkdir -p /opt && \
     make deb && \
     apt install ./packaging/elbencho*.deb
 
+RUN \
+    apt-get update        &&   \
+    apt-get install --yes      \
+        nfs-common && \
+    apt-get clean all
+
 CMD ["/bin/bash"]
