@@ -17,8 +17,11 @@ RUN \
         make                   \
         curl                   \
         zlib1g-dev             \
+        nfs-common             \
         iproute2           &&   \
     apt-get clean all
+
+ADD scripts/flush100.sh /opt/flush100.sh
 
 
 CMD ["/bin/bash"]
