@@ -41,4 +41,7 @@ RUN \
         nfs-common && \
     apt-get clean all
 
+ADD scripts/flush100.sh /opt/flush100.sh
+ADD scripts/blkio.py /opt/blkio.py
+
 CMD ["/bin/bash"]
