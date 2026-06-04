@@ -18,6 +18,7 @@ RUN \
         curl                   \
         zlib1g-dev             \
         nfs-common             \
+        tshark                 \
         iproute2           &&   \
     apt-get clean all
 
