@@ -18,17 +18,25 @@ Build the Debian 12 desktop image with:
 podman-hpc build -f container/debian-12-vnc-novnc.Dockerfile -t debugging-container-vnc-novnc .
 ```
 
-Run it with:
+Run it with the helper script:
 
 ```sh
-podman-hpc run --rm \
-  -p 6080:6080 \
-  -p 5901:5901 \
-  -e VNC_PASSWORD='change-this' \
-  debugging-container-vnc-novnc
+scripts/run-vnc-novnc.sh
 ```
 
-Then open `http://localhost:6080/vnc.html` for noVNC, or connect a VNC client to port `5901`.
+The helper generates a one-time VNC password, chooses a random localhost noVNC port, and does not expose the VNC server port by default. It prints the noVNC URL and password before starting the container.
+
+The helper can be configured with environment variables:
+
+- `IMAGE`, default `localhost/debugging-container-vnc-novnc:latest`
+- `HOST_NOVNC_ADDR`, default `127.0.0.1`
+- `HOST_NOVNC_PORT`, default random
+- `NOVNC_PORT`, default `6080` inside the container
+- `EXPOSE_VNC`, default `0`; set to `1` to publish the VNC server port
+- `VNC_HOST_ADDR`, default `127.0.0.1`
+- `VNC_HOST_PORT`, default to `VNC_PORT`
+- `VNC_PORT`, default `5901` inside the container
+- `VNC_PASSWORD_LENGTH`, default `8`
 
 Runtime settings are controlled with environment variables:
 
@@ -40,6 +48,7 @@ Runtime settings are controlled with environment variables:
 - `VNC_SECURITY_TYPES`, default `VncAuth`; set to `None` to disable VNC auth
 - `VNC_PASSWORD`, default `changeme`
 - `VNC_PASSWORD_FILE`, default `/root/.vnc/passwd`
+- `VNC_PASSWORD_PLAIN_FILE`, optional plaintext password file used to generate `VNC_PASSWORD_FILE`
 - `VNC_XSTARTUP`, default `/root/.vnc/xstartup`
 - `VNC_DESKTOP_CMD`, default `fvwm3`
 - `VNC_EXTRA_ARGS`, appended to `vncserver`

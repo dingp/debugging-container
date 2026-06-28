@@ -59,17 +59,26 @@ fi
 security_types="${VNC_SECURITY_TYPES}"
 if [[ "${security_types,,}" != "none" ]]; then
     if [[ ! -s "${VNC_PASSWORD_FILE}" ]]; then
-        if [[ -z "${VNC_PASSWORD:-}" ]]; then
-            printf 'VNC_PASSWORD is empty and %s does not exist\n' "${VNC_PASSWORD_FILE}" >&2
+        vnc_password="${VNC_PASSWORD:-}"
+        if [[ -n "${VNC_PASSWORD_PLAIN_FILE:-}" ]]; then
+            if [[ ! -r "${VNC_PASSWORD_PLAIN_FILE}" ]]; then
+                printf 'VNC_PASSWORD_PLAIN_FILE is set but not readable: %s\n' "${VNC_PASSWORD_PLAIN_FILE}" >&2
+                exit 1
+            fi
+            IFS= read -r vnc_password < "${VNC_PASSWORD_PLAIN_FILE}"
+        fi
+
+        if [[ -z "${vnc_password}" ]]; then
+            printf 'No VNC password provided and %s does not exist\n' "${VNC_PASSWORD_FILE}" >&2
             exit 1
         fi
         mkdir -p "$(dirname "${VNC_PASSWORD_FILE}")"
-        printf '%s\n' "${VNC_PASSWORD}" | vncpasswd -f > "${VNC_PASSWORD_FILE}"
+        printf '%s\n' "${vnc_password}" | vncpasswd -f > "${VNC_PASSWORD_FILE}"
         chmod 0600 "${VNC_PASSWORD_FILE}"
     fi
 fi
 
-if [[ "${VNC_PASSWORD:-}" == "changeme" && "${security_types,,}" != "none" ]]; then
+if [[ -z "${VNC_PASSWORD_PLAIN_FILE:-}" && "${VNC_PASSWORD:-}" == "changeme" && "${security_types,,}" != "none" ]]; then
     printf 'WARNING: using default VNC_PASSWORD=changeme; set VNC_PASSWORD or mount VNC_PASSWORD_FILE for real use.\n' >&2
 fi
 

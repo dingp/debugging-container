@@ -67,6 +67,7 @@ ENV \
     VNC_SECURITY_TYPES=VncAuth \
     VNC_PASSWORD=changeme \
     VNC_PASSWORD_FILE=/root/.vnc/passwd \
+    VNC_PASSWORD_PLAIN_FILE= \
     VNC_XSTARTUP=/root/.vnc/xstartup \
     VNC_DESKTOP_CMD=fvwm3 \
     VNC_EXTRA_ARGS= \
