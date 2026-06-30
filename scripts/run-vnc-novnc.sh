@@ -1,22 +1,70 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="${IMAGE:-localhost/debugging-container-vnc-novnc:latest}"
+IMAGE="${IMAGE:-ghcr.io/dingp/debian:12-vnc-novnc}"
 CONTAINER_NOVNC_PORT="${NOVNC_PORT:-6080}"
 HOST_NOVNC_ADDR="${HOST_NOVNC_ADDR:-127.0.0.1}"
 HOST_NOVNC_PORT="${HOST_NOVNC_PORT:-}"
+JUPYTER_PROXY_BASE_URL="${JUPYTER_PROXY_BASE_URL:-https://jupyter.nersc.gov}"
+JUPYTER_PROXY_HOST="${JUPYTER_PROXY_HOST:-jupyter.nersc.gov}"
+JUPYTER_PROXY_HTTPS_PORT="${JUPYTER_PROXY_HTTPS_PORT:-443}"
+JUPYTER_PROXY_PREFIX="${JUPYTER_PROXY_PREFIX:-${JUPYTERHUB_SERVICE_PREFIX:-}}"
+JUPYTER_PROXY_USER="${JUPYTER_PROXY_USER:-${USER:-}}"
+JUPYTER_PROXY_SERVER="${JUPYTER_PROXY_SERVER:-}"
 VNC_PORT="${VNC_PORT:-5901}"
 VNC_HOST_ADDR="${VNC_HOST_ADDR:-127.0.0.1}"
 VNC_HOST_PORT="${VNC_HOST_PORT:-$VNC_PORT}"
 EXPOSE_VNC="${EXPOSE_VNC:-0}"
 VNC_PASSWORD_LENGTH="${VNC_PASSWORD_LENGTH:-8}"
 
-random_password() {
-    if command -v openssl >/dev/null 2>&1; then
-        openssl rand -base64 "${VNC_PASSWORD_LENGTH}" | tr -d '\n' | cut -c "1-${VNC_PASSWORD_LENGTH}"
+urlencode() {
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - "$1" <<'PY'
+import sys
+import urllib.parse
+
+print(urllib.parse.quote(sys.argv[1], safe=""), end="")
+PY
         return
     fi
 
+    local input="$1"
+    local output=""
+    local i char hex
+
+    for ((i = 0; i < ${#input}; i++)); do
+        char="${input:i:1}"
+        case "${char}" in
+            [a-zA-Z0-9.~_-]) output+="${char}" ;;
+            *) printf -v hex '%%%02X' "'${char}"; output+="${hex}" ;;
+        esac
+    done
+
+    printf '%s' "${output}"
+}
+
+jupyter_proxy_url() {
+    local prefix="${JUPYTER_PROXY_PREFIX}"
+    local proxy_path encoded_path base_url
+
+    if [[ -z "${prefix}" ]]; then
+        if [[ -z "${JUPYTER_PROXY_USER}" || -z "${JUPYTER_PROXY_SERVER}" ]]; then
+            return 1
+        fi
+        prefix="user/${JUPYTER_PROXY_USER}/${JUPYTER_PROXY_SERVER}"
+    fi
+
+    prefix="${prefix#/}"
+    prefix="${prefix%/}"
+    proxy_path="${prefix}/proxy/${HOST_NOVNC_PORT}"
+    encoded_path="$(urlencode "${proxy_path}")"
+    base_url="${JUPYTER_PROXY_BASE_URL%/}"
+
+    printf '%s/%s/vnc.html?port=%s&host=%s&path=%s' \
+        "${base_url}" "${proxy_path}" "${JUPYTER_PROXY_HTTPS_PORT}" "${JUPYTER_PROXY_HOST}" "${encoded_path}"
+}
+
+random_password() {
     if command -v python3 >/dev/null 2>&1; then
         python3 - "${VNC_PASSWORD_LENGTH}" <<'PY'
 import secrets
@@ -27,6 +75,11 @@ length = int(sys.argv[1])
 alphabet = string.ascii_letters + string.digits
 print("".join(secrets.choice(alphabet) for _ in range(length)), end="")
 PY
+        return
+    fi
+
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex "${VNC_PASSWORD_LENGTH}" | cut -c "1-${VNC_PASSWORD_LENGTH}"
         return
     fi
 
@@ -83,7 +136,12 @@ case "${EXPOSE_VNC,,}" in
 esac
 
 printf 'Image: %s\n' "${IMAGE}"
-printf 'noVNC: http://%s:%s/vnc.html\n' "${HOST_NOVNC_ADDR}" "${HOST_NOVNC_PORT}"
+if access_url="$(jupyter_proxy_url)"; then
+    printf 'noVNC: %s\n' "${access_url}"
+else
+    printf 'noVNC: http://%s:%s/vnc.html\n' "${HOST_NOVNC_ADDR}" "${HOST_NOVNC_PORT}"
+    printf 'Set JUPYTER_PROXY_PREFIX, or set JUPYTER_PROXY_USER and JUPYTER_PROXY_SERVER, to print a jupyter.nersc.gov proxy URL.\n'
+fi
 printf 'One-time VNC password: %s\n' "${vnc_password}"
 if [[ "${EXPOSE_VNC,,}" =~ ^(1|true|yes|y|on)$ ]]; then
     printf 'VNC: %s:%s\n' "${VNC_HOST_ADDR}" "${VNC_HOST_PORT}"
