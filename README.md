@@ -18,13 +18,19 @@ Build the Debian 12 desktop image with:
 podman-hpc build -f container/debian-12-vnc-novnc.Dockerfile -t ghcr.io/dingp/debian:12-vnc-novnc .
 ```
 
-Run it with the helper script:
+Run it with a helper script:
 
 ```sh
-scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py
 ```
 
-The helper generates a one-time VNC password, chooses a random localhost noVNC port, and does not expose the VNC server port by default. It prints the noVNC URL and password before starting the container.
+Run it with the default NERSC-oriented YAML config:
+
+```sh
+scripts/run-vnc-novnc.py --config scripts/run-vnc-novnc.yaml
+```
+
+The helper generates a one-time VNC password, chooses a random localhost noVNC port, and does not expose the VNC server port by default. It prints the noVNC URL and password before starting the container. A shell version is also available at `scripts/run-vnc-novnc.sh`.
 
 See [RUN_VNC_NOVNC.md](RUN_VNC_NOVNC.md) for full usage details.
 

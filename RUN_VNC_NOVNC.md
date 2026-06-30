@@ -1,6 +1,6 @@
-# Using `run-vnc-novnc.sh`
+# Using the VNC/noVNC Helpers
 
-`scripts/run-vnc-novnc.sh` starts the Debian 12 VNC/noVNC desktop image with safer defaults for interactive use on NERSC systems, especially from Jupyter.
+`scripts/run-vnc-novnc.sh` and `scripts/run-vnc-novnc.py` start the Debian 12 VNC/noVNC desktop image with safer defaults for interactive use on NERSC systems, especially from Jupyter. The Python helper has the same default behavior as the shell helper and adds command-line options for bind mounts, environment passthrough, user namespace settings, and extra `podman-hpc` arguments.
 
 ## What It Does
 
@@ -23,7 +23,13 @@ Inside the container, the VNC server listens on `VNC_PORT` and noVNC listens on 
 From the repository root:
 
 ```sh
-scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py
+```
+
+To use the default NERSC-oriented YAML config:
+
+```sh
+scripts/run-vnc-novnc.py --config scripts/run-vnc-novnc.yaml
 ```
 
 The script prints output like:
@@ -56,14 +62,34 @@ https://jupyter.nersc.gov/user/your-user-name/muller-login-node-base/proxy/49967
 If the helper is not running inside Jupyter, provide the server path explicitly:
 
 ```sh
-JUPYTER_PROXY_USER="${USER}" \
-JUPYTER_PROXY_SERVER=perlmutter-login-node \
-scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --jupyter-proxy-server perlmutter-login-node
 ```
 
 The server name is the Jupyter server type, such as `muller-login-node-base` or `perlmutter-login-node`.
 
 ## Configuration
+
+The Python helper can read defaults from a YAML config file:
+
+```sh
+scripts/run-vnc-novnc.py --config scripts/run-vnc-novnc.yaml
+```
+
+The included `scripts/run-vnc-novnc.yaml` uses `--userns=keep-id`, `--group-add=keep-groups`, and bind mounts `$HOME`, `$SCRATCH`, and `$CFS` into the same paths inside the container. Environment variables in YAML strings are expanded on the host when the script starts.
+
+YAML keys use the long option names with underscores instead of dashes. For example:
+
+```yaml
+userns: keep-id
+keep_groups: true
+
+volume:
+  - "${HOME}:${HOME}:rw"
+  - "${SCRATCH}:${SCRATCH}:rw"
+  - "${CFS}:${CFS}:rw"
+```
+
+Precedence is: built-in defaults, YAML config, environment variables, then command-line arguments. Repeated list options such as `volume`, `mount`, `env`, `group_add`, and `extra_podman_args` are initialized from YAML, and additional command-line occurrences are appended.
 
 Common settings:
 
@@ -76,6 +102,21 @@ Common settings:
 | `VNC_PORT` | `5901` | VNC server port inside the container. |
 | `EXPOSE_VNC` | `0` | Set to `1` to also publish the raw VNC server port. |
 | `VNC_PASSWORD_LENGTH` | `8` | Length of the generated one-time VNC password. |
+
+Python helper container options:
+
+| Option | Purpose |
+| --- | --- |
+| `-v`, `--volume HOST:CONTAINER[:OPTIONS]` | Add a bind mount or volume spec. May be repeated. |
+| `--mount SPEC` | Add a Podman `--mount` spec. May be repeated. |
+| `-e`, `--env NAME[=VALUE]` | Pass an environment variable into the container. May be repeated. |
+| `--config FILE` | Read default values from a YAML config file. |
+| `--userns=keep-id` | Pass `--userns=keep-id` to `podman-hpc`. |
+| `--userns-keep-id` | Shorthand for `--userns=keep-id`. |
+| `--group-add=keep-groups` | Pass `--group-add=keep-groups` to `podman-hpc`. |
+| `--keep-groups` | Shorthand for `--group-add=keep-groups`. |
+| `--dry-run` | Print the generated command without running the container. |
+| `--` | Pass following arguments directly to `podman-hpc run` before the image name. |
 
 Jupyter URL settings:
 
@@ -100,33 +141,69 @@ Raw VNC exposure settings:
 Use a fixed noVNC host port:
 
 ```sh
-HOST_NOVNC_PORT=49967 scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --host-novnc-port 49967
 ```
 
 Use a locally built image:
 
 ```sh
-IMAGE=localhost/debugging-container-vnc-novnc:latest scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --image localhost/debugging-container-vnc-novnc:latest
 ```
 
 Run outside Jupyter but still print a Jupyter proxy URL:
 
 ```sh
-JUPYTER_PROXY_USER="${USER}" \
-JUPYTER_PROXY_SERVER=muller-login-node-base \
-scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --jupyter-proxy-server muller-login-node-base
 ```
 
 Expose the raw VNC server port in addition to noVNC:
 
 ```sh
-EXPOSE_VNC=1 scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --expose-vnc
 ```
 
 Use a custom raw VNC host port:
 
 ```sh
-EXPOSE_VNC=1 VNC_HOST_PORT=5905 scripts/run-vnc-novnc.sh
+scripts/run-vnc-novnc.py --expose-vnc --vnc-host-port 5905
+```
+
+Mount host directories into the container:
+
+```sh
+scripts/run-vnc-novnc.py \
+  -v "${HOME}:${HOME}:rw" \
+  -v "${SCRATCH}:${SCRATCH}:rw"
+```
+
+Use the included YAML config for common NERSC mounts and identity handling:
+
+```sh
+scripts/run-vnc-novnc.py --config scripts/run-vnc-novnc.yaml
+```
+
+Run with host identity/group handling:
+
+```sh
+scripts/run-vnc-novnc.py --userns=keep-id --group-add=keep-groups
+```
+
+The shorthand form is equivalent:
+
+```sh
+scripts/run-vnc-novnc.py --userns-keep-id --keep-groups
+```
+
+Pass environment variables into the container:
+
+```sh
+scripts/run-vnc-novnc.py -e NERSC_HOST -e MY_SETTING=value
+```
+
+Pass extra `podman-hpc run` arguments:
+
+```sh
+scripts/run-vnc-novnc.py -- --ipc=host
 ```
 
 ## Security Notes

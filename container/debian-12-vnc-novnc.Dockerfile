@@ -40,11 +40,12 @@ RUN \
     curl --fail --location --show-error "${SSHPROXY_URL}" --output /tmp/sshproxy.tar.gz && \
     tar -xzf /tmp/sshproxy.tar.gz -C /usr/local/bin sshproxy && \
     chmod 0755 /usr/local/bin/sshproxy && \
-    mkdir -p /root/.fvwm  &&   \
+    mkdir -p /etc/vnc-novnc /root/.fvwm  &&   \
     apt-get clean         &&   \
     rm -rf /var/lib/apt/lists/* /tmp/sshproxy.tar.gz
 
 COPY container/vnc/vnc-novnc-entrypoint /usr/local/bin/vnc-novnc-entrypoint
+COPY container/vnc/fvwm3-config /etc/vnc-novnc/fvwm3-config
 COPY container/vnc/fvwm3-config /root/.fvwm/config
 
 RUN \

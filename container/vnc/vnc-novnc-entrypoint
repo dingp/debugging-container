@@ -30,8 +30,37 @@ vnc_port="${VNC_PORT}"
 novnc_vnc_port="${NOVNC_VNC_PORT:-$vnc_port}"
 vnc_localhost="$(normalize_bool "${VNC_LOCALHOST}")"
 
-mkdir -p /root/.vnc /root/.fvwm
-chmod 700 /root/.vnc
+ensure_writable_dir() {
+    local dir="$1"
+    mkdir -p "${dir}" >/dev/null 2>&1 && [[ -w "${dir}" ]]
+}
+
+runtime_home="${VNC_RUNTIME_HOME:-${HOME:-/root}}"
+if ! ensure_writable_dir "${runtime_home}"; then
+    runtime_home="/tmp/vnc-home-$(id -u)"
+    if ! ensure_writable_dir "${runtime_home}"; then
+        printf 'Unable to create writable VNC runtime home: %s\n' "${runtime_home}" >&2
+        exit 1
+    fi
+fi
+
+export HOME="${runtime_home}"
+vnc_dir="${HOME}/.vnc"
+fvwm_dir="${HOME}/.fvwm"
+mkdir -p "${vnc_dir}" "${fvwm_dir}"
+chmod 700 "${vnc_dir}"
+
+if [[ "${VNC_PASSWORD_FILE}" == "/root/.vnc/passwd" && ! -w "/root" ]]; then
+    VNC_PASSWORD_FILE="${vnc_dir}/passwd"
+fi
+
+if [[ "${VNC_XSTARTUP}" == "/root/.vnc/xstartup" && ! -w "/root" ]]; then
+    VNC_XSTARTUP="${vnc_dir}/xstartup"
+fi
+
+if [[ ! -e "${fvwm_dir}/config" && -r /etc/vnc-novnc/fvwm3-config ]]; then
+    cp /etc/vnc-novnc/fvwm3-config "${fvwm_dir}/config"
+fi
 
 if [[ ! -x "${VNC_XSTARTUP}" ]]; then
     cat > "${VNC_XSTARTUP}" <<'EOF'
